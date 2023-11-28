@@ -11,32 +11,6 @@ import {
 function SettingsPage() {
   return (
     <SafeAreaView>
-      {/* Header */}
-      <View style={styles.headerContainer}>
-        <Icon name="keyboard-return" size={30} />
-        <Text style={styles.headerText}>Settings</Text>
-      </View>
-      {/* User Details */}
-      <ListItem bottomDivider>
-        <Avatar
-          size={100}
-          rounded
-          title="HM"
-          containerStyle={{backgroundColor: 'gray'}}
-        />
-        <ListItem.Content>
-          <ListItem.Title>Hartaj Mann</ListItem.Title>
-          <ListItem.Subtitle>abc@gmail.com</ListItem.Subtitle>
-        </ListItem.Content>
-      </ListItem>
-
-      {/* Favourite Locations */}
-      <ListItem bottomDivider>
-        <ListItem.Content>
-          <ListItem.Title>Saved Locations</ListItem.Title>
-        </ListItem.Content>
-      </ListItem>
-
       {/* Temperature */}
       <ListItem bottomDivider>
         <ListItem.Content
