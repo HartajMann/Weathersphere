@@ -1,79 +1,73 @@
-import React, {
-  useEffect,
-  useState
-} from 'react';
-import {
-  FlatList,
-  ImageBackground,
-  SafeAreaView,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View
-} from 'react-native';
+import React, { useState } from 'react';
+import { TextInput, FlatList, ImageBackground, SafeAreaView, ScrollView, StyleSheet, Text, View, Button } from 'react-native';
 
-const cityCoordinates = [
-  { id: '1', name: 'London', latitude: 51.5085, longitude: -0.1257 },
-  { id: '2', name: 'New York', latitude: 56.25, longitude: -5.2833 },
-  { id: '3', name: 'Paris', latitude: 48.8534, longitude: 2.3488 },
-  { id: '4', name: 'Tokyo', latitude: 35.6895, longitude: 139.6917 },
-  { id: '5', name: 'Berlin', latitude: 52.5244, longitude: 13.4105 },
-];
-
-const Day = ({ title, temp, tempMax, tempMin }) => (
-  <View style={styles.cityDetails}>
+const WeatherInfo = ({ title, temperature, windSpeed }) => (
+  <View style={styles.weatherDetails}>
     <Text style={styles.city}>City: {title}</Text>
-    <Text style={styles.temp}> {temp}°C</Text>
-    <Text style={styles.weatherInfo}>Max: {tempMax}°C</Text> 
-    <Text style={styles.weatherInfo}>Min: {tempMin}°C</Text> 
+    <Text style={styles.temp}>Temperature: {temperature}°C</Text>
+    <Text style={styles.weatherInfo}>Wind Speed: {windSpeed} km/h</Text>
   </View>
 );
 
 function Search() {
+  const [cityName, setCityName] = useState('');
+  const [weatherData, setWeatherData] = useState(null);
 
-  const [weatherData, setWeatherData] = useState([]);
+  const getCoordinates = async (city) => {
+    try {
+      const response = await fetch(`https://geocode.maps.co/search?q=${city}`);
+      const data = await response.json();
 
-  useEffect(() => {
-    const fetchWeatherData = async () => {
-      try {
-        const weatherPromises = cityCoordinates.map(city =>
-          fetch(`https://api.open-meteo.com/v1/forecast?latitude=${city.latitude}&longitude=${city.longitude}&current_weather=true&daily=temperature_2m_max,temperature_2m_min&timezone=auto&forecast_days=1`)
-            .then(response => response.json())
-        );
-        const weatherResults = await Promise.all(weatherPromises);
-        const updatedWeatherData = weatherResults.map((result, index) => ({
-          ...cityCoordinates[index],
-          temp: result.current_weather.temperature,
-          tempMax: result.daily.temperature_2m_max[0],
-          tempMin: result.daily.temperature_2m_min[0],
-        }));
-        setWeatherData(updatedWeatherData);
-      } catch (error) {
-        console.error("Error fetching weather data: ", error);
+      // Assuming the first result is the most relevant one
+      if (data && data.length > 0) {
+        return { latitude: data[0].lat, longitude: data[0].lon };
+      } else {
+        throw new Error('Location not found');
       }
-    };
+    } catch (error) {
+      console.error("Error fetching coordinates: ", error);
+      throw error;
+    }
+  };
 
-    fetchWeatherData();
-  }, []);
+  const fetchWeatherData = async () => {
+    try {
+      const { latitude, longitude } = await getCoordinates(cityName);
+
+      const response = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current_weather=true`);
+      const data = await response.json();
+
+      setWeatherData({
+        name: cityName,
+        temperature: data.current_weather.temperature,
+        windSpeed: data.current_weather.windspeed,
+      });
+    } catch (error) {
+      console.error("Error fetching weather data: ", error);
+      setWeatherData(null); // Reset data in case of an error
+    }
+  };
 
   return (
     <SafeAreaView>
       <ScrollView>
         <ImageBackground source={require('./assets/Location.jpg')} style={{ width: '100%', height: '100%' }}>
           <View style={styles.container}>
-            <Text style={styles.weather}>Weather</Text>
-            <FlatList
-              data={weatherData}
-              renderItem={({ item }) => (
-                <Day
-                  title={item.name}
-                  temp={item.temp}
-                  tempMax={item.tempMax}
-                  tempMin={item.tempMin}
-                />
-              )}
-              keyExtractor={item => item.id}
+            <Text style={styles.header}>Weather Search</Text>
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Enter City Name"
+              value={cityName}
+              onChangeText={setCityName}
             />
+            <Button title="Search" onPress={fetchWeatherData} />
+            {weatherData && (
+              <WeatherInfo
+                title={weatherData.name}
+                temperature={weatherData.temperature}
+                windSpeed={weatherData.windSpeed}
+              />
+            )}
           </View>
         </ImageBackground>
       </ScrollView>
@@ -84,39 +78,32 @@ function Search() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    padding: 20,
   },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-  },
-  weather: {
     fontSize: 50,
     color: 'white',
+    textAlign: 'center',
+    marginBottom: 20,
   },
-  search: {
-    fontSize: 20,
-    marginTop: 20,
-    marginLeft: 10,
-    marginRight: 10,
-    textAlign: 'left',
-    color: 'white',
-    borderColor: 'white',
-    borderWidth: 3,
+  searchInput: {
+    height: 40,
+    borderColor: 'gray',
+    borderWidth: 1,
+    marginBottom: 10,
+    color: 'black',
+    backgroundColor: 'white',
     borderRadius: 10,
-    padding: 5,
+    paddingHorizontal: 10,
   },
-  cityDetails: {
+  weatherDetails: {
     backgroundColor: 'white',
     marginTop: 10,
-    margin: 5,
+    marginHorizontal: 10,
     padding: 30,
-    marginLeft: 10,
-    marginRight: 10,
-    borderRadius: 50,
+    borderRadius: 10,
     borderColor: 'black',
-    borderWidth: 3,
+    borderWidth: 1,
   },
   city: {
     fontSize: 20,
@@ -134,7 +121,6 @@ const styles = StyleSheet.create({
     textAlign: 'left',
     color: 'black',
   },
-  
 });
 
 export default Search;

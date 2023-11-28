@@ -1,34 +1,23 @@
-
-
-import { NavigationContainer } from '@react-navigation/native';
-import { createStackNavigator } from '@react-navigation/stack';
+import 'react-native-gesture-handler';
 import React from 'react';
+import { NavigationContainer } from '@react-navigation/native';
+import { createDrawerNavigator } from '@react-navigation/drawer';
 import Home from './src/Home';
 import Search from './src/Search';
 import SettingsPage from './src/SettingsPage';
 
-
-const Stack = createStackNavigator();
-
-
-
+const Drawer = createDrawerNavigator(); 
 
 function App() {
-
-  return(
+  return (
     <NavigationContainer>
-
-      <Stack.Navigator>
-        <Stack.Screen name="Home" component={Home} />
-        <Stack.Screen name="Search" component={Search} />
-        <Stack.Screen name="SettingsPage" component={SettingsPage} />
-      </Stack.Navigator>
-    
+      <Drawer.Navigator>
+        <Drawer.Screen name="Home" component={Home} />
+        <Drawer.Screen name="Search" component={Search} />
+        <Drawer.Screen name="Settings" component={SettingsPage} />
+      </Drawer.Navigator>
     </NavigationContainer>
-
-  )
-
-
+  );
 }
 
 export default App;
