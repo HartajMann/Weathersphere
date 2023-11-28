@@ -59,13 +59,6 @@ function SettingsPage() {
         </ListItem.Content>
       </ListItem>
 
-      {/* Log Out */}
-      <ListItem bottomDivider>
-        <ListItem.Content>
-          <ListItem.Title>Log out</ListItem.Title>
-        </ListItem.Content>
-      </ListItem>
-
       {/* Version */}
       <View style={styles.footerContainer}>
         <Text style={styles.footerText}>Version 1.0.0</Text>
