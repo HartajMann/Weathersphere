@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { TextInput, FlatList, ImageBackground, SafeAreaView, ScrollView, StyleSheet, Text, View, Button } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
 
 const WeatherInfo = ({ title, temperature, windSpeed }) => (
   <View style={styles.weatherDetails}>
@@ -29,6 +31,25 @@ function Search() {
       throw error;
     }
   };
+  const saveLocation = async () => {
+    try {
+      const locationData = {
+        name: cityName,
+        latitude: weatherData.latitude,
+        longitude: weatherData.longitude
+      };
+      const jsonValue = JSON.stringify(locationData);
+      await AsyncStorage.setItem(`location_${cityName}`, jsonValue);
+      alert('Location saved!');
+    } catch (error) {
+      console.error("Error saving location: ", error);
+    }
+  };
+  const clearSearch = () => {
+    setCityName('');
+    setWeatherData(null);
+  };
+
 
   const fetchWeatherData = async () => {
     try {
@@ -62,12 +83,16 @@ function Search() {
             />
             <Button title="Search" onPress={fetchWeatherData} />
             {weatherData && (
-              <WeatherInfo
-                title={weatherData.name}
-                temperature={weatherData.temperature}
-                windSpeed={weatherData.windSpeed}
-              />
+              <>
+                <WeatherInfo
+                  title={weatherData.name}
+                  temperature={weatherData.temperature}
+                  windSpeed={weatherData.windSpeed}
+                />
+                <Button title="Save Location" onPress={saveLocation} />
+              </>
             )}
+            <Button title="Clear" onPress={clearSearch} />
           </View>
         </ImageBackground>
       </ScrollView>
