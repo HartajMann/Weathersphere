@@ -14,17 +14,15 @@ import {
   Alert,
 } from 'react-native';
 import Geolocation from '@react-native-community/geolocation';
+import * as Progress from 'react-native-progress';
+
+
 
 function Home({ navigation }) {
   const [weatherData, setWeatherData] = useState(null);
   const [loading, setLoading] = useState(true);
 
   async function requestPermissions() {
-    if (Platform.OS === 'ios') {
-      Geolocation.requestAuthorization('whenInUse');
-      return true;
-    }
-
     if (Platform.OS === 'android') {
       const granted = await PermissionsAndroid.request(
         PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
@@ -83,7 +81,8 @@ function Home({ navigation }) {
   }, []);
 
   if (!weatherData) {
-    return <Text>Loading...</Text>;
+    return <View style={styles.centeredContainer}><Progress.CircleSnail  size={100} thickness={10} color='#0bb3b2' />
+    </View>
   }
 
   const forecastData = weatherData.daily.time.map((time, index) => ({
@@ -127,14 +126,10 @@ function Home({ navigation }) {
       <ScrollView>
         <View style={styles.container}>
           <ImageBackground
-            source={require('./assets/Background-current.jpg')}
+          blurRadius={70}
+            source={require('./assets/bg.png')}
             style={styles.image}>
             <Text style={styles.location}>My Location</Text>
-            <Text style={styles.city}>Saddletown,Calgary</Text>
-            <Image
-              source={require('./assets/snowIcon.png')}
-              style={{ width: 50, height: 50, marginTop: 20 }}
-            />
 
             <Text style={styles.current}>
               {weatherData.current_weather.temperature}°C
@@ -228,6 +223,12 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 30,
     marginTop: 30,
+  },
+
+ centeredContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 
   city: {

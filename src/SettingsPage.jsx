@@ -1,5 +1,6 @@
 /* eslint-disable react-native/no-inline-styles */
 import { Avatar, Icon, ListItem, Switch } from '@rneui/themed';
+import { TouchableOpacity } from 'react-native';
 import React from 'react';
 import {
   SafeAreaView,
@@ -8,22 +9,29 @@ import {
   View
 } from 'react-native';
 
-function SettingsPage() {
+function SettingsPage({ navigation }) {
+   const viewHelpPage = (help) => {
+     navigation.navigate('Help', { help});};
+    const viewContactPage = (contact) => {
+      navigation.navigate('Contact', { contact });
+    };
+  
   return (
     <SafeAreaView>
       {/* Privacy Policy */}
-      <ListItem bottomDivider>
+      <ListItem bottomDivider onPress={()=> viewContactPage('Contact.jsx')}>
         <ListItem.Content>
-          <ListItem.Title>Privacy Policy</ListItem.Title>
+          <ListItem.Title>Contact Us</ListItem.Title>
         </ListItem.Content>
       </ListItem>
 
       {/* Help */}
-      <ListItem bottomDivider>
+      <ListItem bottomDivider onPress={() => viewHelpPage('Help.jsx')}>
         <ListItem.Content>
           <ListItem.Title>Help</ListItem.Title>
         </ListItem.Content>
       </ListItem>
+
 
       {/* Version */}
       <View style={styles.footerContainer}>
