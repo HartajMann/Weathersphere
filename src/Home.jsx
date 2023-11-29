@@ -9,25 +9,77 @@ import {
   StyleSheet,
   Text,
   View,
+  PermissionsAndroid,
+  Platform,
+  Alert,
 } from 'react-native';
+import Geolocation from '@react-native-community/geolocation';
 
 function Home({ navigation }) {
   const [weatherData, setWeatherData] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  async function requestPermissions() {
+    if (Platform.OS === 'ios') {
+      Geolocation.requestAuthorization('whenInUse');
+      return true;
+    }
+
+    if (Platform.OS === 'android') {
+      const granted = await PermissionsAndroid.request(
+        PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+        {
+          title: 'Location Access Required',
+          message: 'This app needs to access your location',
+        },
+      );
+      return granted === PermissionsAndroid.RESULTS.GRANTED;
+    }
+
+    return false;
+  }
+
+  async function fetchWeatherData(latitude, longitude) {
+    try {
+      const response = await fetch(
+        `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current_weather=true&hourly=temperature_2m,wind_speed_10m&daily=temperature_2m_max,temperature_2m_min,sunrise,sunset&timezone=auto`,
+      );
+      const data = await response.json();
+      setWeatherData(data);
+      setLoading(false);
+    } catch (error) {
+      console.error('Error fetching weather data:', error);
+      setLoading(false);
+    }
+  }
 
   useEffect(() => {
-    const fetchWeatherData = async () => {
-      try {
-        const response = await fetch(
-          'https://api.open-meteo.com/v1/forecast?latitude=51.0501&longitude=-114.0853&current_weather=true&hourly=temperature_2m,wind_speed_10m&daily=temperature_2m_max,temperature_2m_min,sunrise,sunset&timezone=auto',
+    async function getLocationAndFetchWeather() {
+      const hasPermission = await requestPermissions();
+      if (!hasPermission) {
+        Alert.alert(
+          'Permission Denied',
+          'You need to grant location permissions to use this feature.',
         );
-        const data = await response.json();
-        setWeatherData(data);
-      } catch (error) {
-        console.error('Error fetching data: ', error);
+        setLoading(false);
+        return;
       }
-    };
 
-    fetchWeatherData();
+      Geolocation.getCurrentPosition(
+        position => {
+          fetchWeatherData(position.coords.latitude, position.coords.longitude);
+          console.log('Location fetched');
+        },
+        error => {
+          console.error('Location error:', error);
+          setLoading(false);
+        },
+        { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 },
+      );
+      
+    }
+
+    getLocationAndFetchWeather();
   }, []);
 
   if (!weatherData) {
@@ -118,11 +170,10 @@ function Home({ navigation }) {
                 style={[styles.icon]}
               />
 
-              <Text style={styles.windIn}>
-                {weatherData && weatherData.current_weather
-                  ? `${weatherData.current_weather.wind_speed} km/h`
-                  : 'Loading...'}
-              </Text>
+<Text style={styles.windIn}>
+  {weatherData.current_weather ? `${weatherData.current_weather.windspeed} km/h` : 'Loading...'}
+</Text>
+
             </View>
 
             <Text

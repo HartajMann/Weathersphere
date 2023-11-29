@@ -11,40 +11,6 @@ import {
 function SettingsPage() {
   return (
     <SafeAreaView>
-      {/* Temperature */}
-      <ListItem bottomDivider>
-        <ListItem.Content
-          style={{
-            flexDirection: 'row',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-          }}>
-          <ListItem.Title>Temperature</ListItem.Title>
-          <View style={{flexDirection: 'row', alignItems: 'center'}}>
-            <Text style={{marginRight: 10}}>*C</Text>
-            <Switch value={false} />
-            <Text style={{marginLeft: 10}}>*F</Text>
-          </View>
-        </ListItem.Content>
-      </ListItem>
-
-      {/* Wind Speed */}
-      <ListItem bottomDivider>
-        <ListItem.Content
-          style={{
-            flexDirection: 'row',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-          }}>
-          <ListItem.Title>Wind Speed</ListItem.Title>
-          <View style={{flexDirection: 'row', alignItems: 'center'}}>
-            <Text style={{marginRight: 10}}>Km/h</Text>
-            <Switch value={true} />
-            <Text style={{marginLeft: 10}}>Mph</Text>
-          </View>
-        </ListItem.Content>
-      </ListItem>
-
       {/* Privacy Policy */}
       <ListItem bottomDivider>
         <ListItem.Content>

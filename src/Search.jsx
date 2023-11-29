@@ -33,10 +33,12 @@ function Search() {
   };
   const saveLocation = async () => {
     try {
+      const { latitude, longitude } = await getCoordinates(cityName);
+  
       const locationData = {
         name: cityName,
-        latitude: weatherData.latitude,
-        longitude: weatherData.longitude
+        latitude: latitude,
+        longitude: longitude
       };
       const jsonValue = JSON.stringify(locationData);
       await AsyncStorage.setItem(`location_${cityName}`, jsonValue);
