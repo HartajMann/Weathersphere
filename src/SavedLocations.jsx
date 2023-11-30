@@ -64,7 +64,7 @@ function SavedLocationsPage({ navigation }) {
                 onLongPress={() => toggleSelection(item.name)}
                 style={selectedLocations.has(item.name) ? styles.selectedLocationItem : styles.locationItem}
             >
-                <Text>{item.name}</Text>
+                <Text>{item.name.toUpperCase()}</Text>
             </TouchableOpacity>
         );
 
