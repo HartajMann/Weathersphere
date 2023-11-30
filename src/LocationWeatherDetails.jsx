@@ -5,10 +5,14 @@ import {
   StyleSheet,
   SafeAreaView,
   ScrollView,
-  Image,
   ImageBackground,
   FlatList,
+  Dimensions,
+  Image
 } from 'react-native';
+import * as Progress from 'react-native-progress';
+
+const { width, height } = Dimensions.get('window');
 
 function LocationWeatherDetails({ route }) {
   const { location } = route.params;
@@ -18,7 +22,7 @@ function LocationWeatherDetails({ route }) {
     const fetchWeatherData = async () => {
       try {
         const response = await fetch(
-          `https://api.open-meteo.com/v1/forecast?latitude=${location.latitude}&longitude=${location.longitude}&current_weather=true&hourly=temperature_2m,wind_speed_10m&daily=temperature_2m_max,temperature_2m_min,sunrise,sunset&timezone=auto`,
+          `https://api.open-meteo.com/v1/forecast?latitude=${location.latitude}&longitude=${location.longitude}&current_weather=true&forecast_days=14&hourly=temperature_2m,wind_speed_10m&daily=temperature_2m_max,temperature_2m_min,sunrise,precipitation_probability_max,sunset&timezone=auto`,
         );
         const data = await response.json();
         setWeatherData(data);
@@ -31,108 +35,301 @@ function LocationWeatherDetails({ route }) {
   }, [location]);
 
   if (!weatherData) {
-    return <Text>Loading...</Text>;
+    return (
+      <View style={styles.centeredContainer}>
+        <Progress.CircleSnail size={100} thickness={10} color='#0bb3b2' />
+      </View>
+    );
   }
 
-  // Prepare data for rendering
-  const hourlyForecastData = weatherData.hourly ? weatherData.hourly.time.map((time, index) => ({
-    time: time,
-    temperature: weatherData.hourly.temperature_2m[index],
-    key: `hourly-${index}`,
-  })) : [];
+  const today = new Date().setHours(0, 0, 0, 0); 
 
-  const dailyForecastData = weatherData.daily ? weatherData.daily.time.map((time, index) => ({
+const forecastData = weatherData.daily.time
+  .map((time, index) => ({
     day: time,
-    maxTemp: weatherData.daily.temperature_2m_max[index],
-    minTemp: weatherData.daily.temperature_2m_min[index],
-    key: `daily-${index}`,
-  })) : [];
+    temperature_2m_max: weatherData.daily.temperature_2m_max[index],
+    temperature_2m_min: weatherData.daily.temperature_2m_min[index],
+    key: `${index}`,
+  }))
+  .filter(item => {
+    const forecastDay = new Date(item.day).setHours(0, 0, 0, 0);
+    return forecastDay > today;
+  })
+  .slice(0, 7);
+  
+
+  const renderHourlyForecastItem = ({ item }) => {
+    // Format the time to a more human-readable format
+    const formattedTime = new Date(item.time).toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      hour12: true // Change this to false if you prefer 24-hour format
+    });
+  
+    return (
+      <View style={styles.hourlyItem}>
+        <Text style={styles.hourlyText}>{formattedTime}</Text>
+        <Text style={styles.hourlyText}>{Math.round(item.temperature_2m)}°C</Text>
+      </View>
+    );
+  };
+  
+
+  const currentTime = new Date();
+
+const hourlyForecastData =
+  weatherData && weatherData.hourly
+    ? weatherData.hourly.time.map((time, index) => ({
+        time: time,
+        temperature_2m: weatherData.hourly.temperature_2m[index],
+        key: `${index}`,
+      })).filter(({ time }) => {
+        // Convert the time to a Date object and compare with the current time
+        const forecastTime = new Date(time);
+        const differenceInHours = (forecastTime - currentTime) / 1000 / 60 / 60;
+        return differenceInHours >= 0 && differenceInHours <= 24;
+      })
+    : [];
+
+
+    const renderForecastItem = ({ item }) => {
+      let date = new Date(item.day);
+      let options = { weekday: 'long' };
+      let dayName = date.toLocaleDateString('en-US', options);
+      dayName = dayName.split(',')[0];
+    return (
+      <View style={styles.outerday}>
+      <View style={styles.day}>
+        <Text style={styles.innerDay}>
+          {dayName} 
+        </Text>
+        <Text style={styles.innerDay}>
+        High: {Math.round(item.temperature_2m_max)}°
+          Low: {Math.round(item.temperature_2m_min)}°
+        </Text>
+      </View>
+      </View>
+    );
+  };
+  function formatTime(isoString) {
+    const date = new Date(isoString);
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView>
-        <View style={styles.container}>
-          <ImageBackground
-            source={require('./assets/Background-current.jpg')} // Replace with your own image
-            style={styles.image}>
-            <Text style={styles.location}>{location.name}</Text>
+    <SafeAreaView style={{ flex: 1 }}>
+      <ImageBackground
+        blurRadius={70}
+        source={require('./assets/bg.png')}
+        style={styles.image}>
+        <ScrollView contentContainerStyle={styles.scrollViewContainer}>
+          <View style={styles.container}>
+
+          <Text style={styles.location}>{location.name.toUpperCase()}</Text>
+
             <Text style={styles.current}>
-              {weatherData.current_weather.temperature}°C
+              {Math.round(weatherData.current_weather.temperature)}°C
             </Text>
 
-            <View style={styles.forecastContainer}>
-              <Text style={styles.forecastTitle}>Hourly Forecast</Text>
-              <FlatList
-                data={hourlyForecastData}
-                renderItem={({ item }) => (
-                  <View style={styles.forecastItem}>
-                    <Text style={styles.forecastText}>{item.time}: {item.temperature}°C</Text>
-                  </View>
-                )}
-                horizontal
-                keyExtractor={item => item.key}
-              />
-            </View>
+            {weatherData.daily && (
+              <View style={styles.highLowContainer}>
+                <Text style={styles.highLow}>
+                  High: {Math.round(weatherData.daily.temperature_2m_max[0])}°
+                </Text>
+                <Text style={styles.highLow}>
+                  Low: {Math.round(weatherData.daily.temperature_2m_min[0])}°
+                </Text>
+              </View>
+            )}
 
-            <View style={styles.forecastContainer}>
-              <Text style={styles.forecastTitle}>Daily Forecast</Text>
-              <FlatList
-                data={dailyForecastData}
-                renderItem={({ item }) => (
-                  <View style={styles.forecastItem}>
-                    <Text style={styles.forecastText}>{item.day}: High {item.maxTemp}°C, Low {item.minTemp}°C</Text>
-                  </View>
-                )}
-                keyExtractor={item => item.key}
-              />
+            { weatherData.daily && (<View style={styles.otherstatscontainer}>
+              <View style={styles.otherstats}>
+                <Image source={require('./assets/wind.png')} style={[styles.icon]} />
+                <Text style={styles.otherstatstext}>{weatherData.current_weather ? `${Math.round(weatherData.current_weather.windspeed)} km/h` : 'Loading...'}</Text>
+              </View>
+              <View style={styles.otherstats}>
+                <Image source={require('./assets/drop.png')} style={[styles.icon]} />
+                <Text style={styles.otherstatstext}>
+                {`${weatherData.daily.precipitation_probability_max[0]}%`}
+                </Text>
+              </View>
+              <View style={styles.otherstats}>
+                <Image source={require('./assets/sun.png')} style={[styles.icon]} />
+                <Text style={styles.otherstatstext}>
+                  {`${formatTime(weatherData.daily.sunrise[0])}`}
+                </Text>
+              </View>
             </View>
-          </ImageBackground>
-        </View>
-      </ScrollView>
+            )}
+            <Text style={styles.textdays}>HOURLY FORECAST</Text>
+            <FlatList
+              data={hourlyForecastData} 
+              renderItem={renderHourlyForecastItem}
+              horizontal={true}
+              keyExtractor={item => item.key}
+            />
+            <Text style={styles.textdays}>7-DAY FORECAST</Text>
+            <FlatList
+              data={forecastData} scrollEnabled={false}
+              renderItem={renderForecastItem}
+              keyExtractor={item => item.key}
+            />
+          </View>
+        </ScrollView>
+      </ImageBackground>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
+    flex: 1, // This will ensure the container takes up all available space
+    alignItems: 'center', // This will center your content horizontally
+    justifyContent: 'center', // This will center your content vertically
+    paddingVertical: 20, // Optional: If you want some space on the top and bottom
   },
-  image: {
+  imageBackground: {
     flex: 1,
-    resizeMode: 'cover',
+    justifyContent: 'center', // Center content vertically
+    alignItems: 'center', // Center content horizontally
+  },
+  scrollViewContainer: {
+    flexGrow: 1, // This will make sure the ScrollView content stretches to fit the space
+    justifyContent: 'center', // This will center the content vertically
+  },
+  
+  highLowContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    width: 150,
+  },
+  otherstatscontainer: {
+    flexDirection: 'row',
+    justifyContent: 'between',
+    marginTop: 10,
+  },
+  otherstats:
+  {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginRight: 15,
+  },
+  otherstatstext: {
+    color: 'white',
+    fontSize: 20,
+    marginTop: 2,
+    marginLeft: 5,
+    fontWeight: '500',
+  },
+  button: {
+    backgroundColor: 'red',
+    borderRadius: 25,
+    padding: 10,
+    elevation: 2,
+    marginBottom: 10,
+  },
+
+  windBg: {
+    backgroundColor: '#ADD8E6',
+    width: 350,
+    height: 150,
+    borderRadius: 30,
+    borderColor: 'white',
+    borderWidth: 2,
+    alignItems: 'center',
+    padding: 5,
+  },
+
+  wind: {
+    fontSize: 20,
+    color: 'black',
+  },
+
+  icon: { width: 30, height: 30 },
+
+  windIn: {
+    color: 'black',
+    fontSize: 40,
+    textAlign: 'right',
+  },
+
+  location: {
+    color: 'white',
+    fontSize: 30,
+  },
+
+  centeredContainer: {
+    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  location: {
-    fontSize: 30,
+
+  city: {
     color: 'white',
-    marginTop: 20,
+    fontSize: 15,
+    marginTop: 5,
+  },
+
+  image: {
+    flex: 1,
+    width: width, // Use the width from Dimensions
+    height: height, // Use the height from Dimensions
   },
   current: {
-    fontSize: 40,
     color: 'white',
-    marginVertical: 10,
+    fontSize: 60,
   },
-  forecastContainer: {
-    width: '100%',
-    paddingVertical: 10,
-  },
-  forecastTitle: {
+  highLow: {
+    margin: 3,
+    padding: 3,
+    color: 'white',
     fontSize: 20,
+    fontWeight: '500',
+  },
+
+  outerday: {
+    padding:3,
+    borderRadius: 5,
+  },
+  day: {
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    width: width * 0.95, 
+    padding: 15,
+    borderRadius: 15,
+    borderWidth: 1,
+    borderColor: 'gray',
+  },
+
+  innerDay: {
     color: 'white',
-    marginBottom: 10,
+    fontSize: 18,
+    fontWeight: '500',
+  
   },
-  forecastItem: {
-    backgroundColor: 'rgba(255,255,255,0.8)',
-    padding: 10,
-    marginHorizontal: 5,
-    borderRadius: 10,
-  },
-  forecastText: {
+  textdays:{
+    color: 'white',
     fontSize: 15,
-    color: 'black',
+    fontWeight: '500',
+    marginTop: 15,
+    marginBottom : 10,
   },
-  // Add more styles as needed
+
+  hourlyItem: {
+    backgroundColor: 'rgba(255,255,255,0.3)', // Slightly transparent white
+    borderRadius: 10,
+    paddingLeft: 20,
+    paddingRight: 20,
+    paddingTop: 15,
+    paddingBottom: 15,  
+    alignItems: 'center', // Center items horizontally
+    justifyContent: 'center', // Center items vertically
+    marginRight: 5, // Space between items
+    marginLeft: 5, // Space between items
+  },
+  hourlyText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '500',
+  },
 });
 
 export default LocationWeatherDetails;
