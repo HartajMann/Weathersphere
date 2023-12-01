@@ -107,10 +107,9 @@ const forecastData = weatherData.daily.time
   
 
   const renderHourlyForecastItem = ({ item }) => {
-    // Format the time to a more human-readable format
     const formattedTime = new Date(item.time).toLocaleTimeString('en-US', {
       hour: 'numeric',
-      hour12: true // Change this to false if you prefer 24-hour format
+      hour12: true 
     });
   
     return (
@@ -131,7 +130,6 @@ const hourlyForecastData =
         temperature_2m: weatherData.hourly.temperature_2m[index],
         key: `${index}`,
       })).filter(({ time }) => {
-        // Convert the time to a Date object and compare with the current time
         const forecastTime = new Date(time);
         const differenceInHours = (forecastTime - currentTime) / 1000 / 60 / 60;
         return differenceInHours >= 0 && differenceInHours <= 24;
@@ -231,19 +229,19 @@ const hourlyForecastData =
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1, // This will ensure the container takes up all available space
-    alignItems: 'center', // This will center your content horizontally
-    justifyContent: 'center', // This will center your content vertically
-    paddingVertical: 20, // Optional: If you want some space on the top and bottom
+    flex: 1, 
+    alignItems: 'center', 
+    justifyContent: 'center', 
+    paddingVertical: 20, 
   },
   imageBackground: {
     flex: 1,
-    justifyContent: 'center', // Center content vertically
-    alignItems: 'center', // Center content horizontally
+    justifyContent: 'center', 
+    alignItems: 'center', 
   },
   scrollViewContainer: {
-    flexGrow: 1, // This will make sure the ScrollView content stretches to fit the space
-    justifyContent: 'center', // This will center the content vertically
+    flexGrow: 1, 
+    justifyContent: 'center', 
   },
   
   highLowContainer: {
@@ -320,8 +318,8 @@ const styles = StyleSheet.create({
 
   image: {
     flex: 1,
-    width: width, // Use the width from Dimensions
-    height: height, // Use the height from Dimensions
+    width: width, 
+    height: height, 
   },
   current: {
     color: 'white',
@@ -363,16 +361,16 @@ const styles = StyleSheet.create({
   },
 
   hourlyItem: {
-    backgroundColor: 'rgba(255,255,255,0.3)', // Slightly transparent white
+    backgroundColor: 'rgba(255,255,255,0.3)', 
     borderRadius: 10,
     paddingLeft: 20,
     paddingRight: 20,
     paddingTop: 15,
     paddingBottom: 15,  
-    alignItems: 'center', // Center items horizontally
-    justifyContent: 'center', // Center items vertically
-    marginRight: 5, // Space between items
-    marginLeft: 5, // Space between items
+    alignItems: 'center', 
+    justifyContent: 'center', 
+    marginRight: 5, 
+    marginLeft: 5,
   },
   hourlyText: {
     color: 'white',

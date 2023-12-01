@@ -1,15 +1,18 @@
 import React, { useState } from 'react';
-import { TextInput, FlatList, ImageBackground, SafeAreaView, ScrollView, StyleSheet, Text, View, Button } from 'react-native';
+import {
+  TextInput,
+  TouchableOpacity,
+  SafeAreaView,
+  ImageBackground,
+  StyleSheet,
+  Text,
+  View,
+  Dimensions,
+  Alert,
+} from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-
-const WeatherInfo = ({ title, temperature, windSpeed }) => (
-  <View style={styles.weatherDetails}>
-    <Text style={styles.city}>City: {title}</Text>
-    <Text style={styles.temp}>Temperature: {temperature}°C</Text>
-    <Text style={styles.weatherInfo}>Wind Speed: {windSpeed} km/h</Text>
-  </View>
-);
+const { width, height } = Dimensions.get('window');
 
 function Search() {
   const [cityName, setCityName] = useState('');
@@ -20,7 +23,6 @@ function Search() {
       const response = await fetch(`https://geocode.maps.co/search?q=${city}`);
       const data = await response.json();
 
-      // Assuming the first result is the most relevant one
       if (data && data.length > 0) {
         return { latitude: data[0].lat, longitude: data[0].lon };
       } else {
@@ -29,6 +31,16 @@ function Search() {
     } catch (error) {
       console.error("Error fetching coordinates: ", error);
       throw error;
+    }
+  };
+  const handleSearch = async () => {
+    if (cityName.trim()) {
+      try {
+        const coordinates = await getCoordinates(cityName);
+        await fetchWeatherData(coordinates);
+      } catch (error) {
+        Alert.alert("Error", error.message);
+      }
     }
   };
   const saveLocation = async () => {
@@ -67,87 +79,142 @@ function Search() {
       });
     } catch (error) {
       console.error("Error fetching weather data: ", error);
-      setWeatherData(null); // Reset data in case of an error
+      setWeatherData(null); 
     }
   };
 
   return (
-    <SafeAreaView>
-      <ScrollView>
-        <ImageBackground source={require('./assets/Location.jpg')} style={{ width: '100%', height: '100%' }}>
-          <View style={styles.container}>
-            <Text style={styles.header}>Weather Search</Text>
+    <SafeAreaView style={styles.flexContainer}>
+      <ImageBackground
+        blurRadius={70}
+        source={require('./assets/bg.png')} 
+        style={styles.imageBackground}
+      >
+        <View style={styles.contentContainer}>
+          <Text style={styles.header}>Search Location</Text>
+          <View style={styles.searchContainer}>
             <TextInput
               style={styles.searchInput}
               placeholder="Enter City Name"
+              placeholderTextColor="#AAA"
               value={cityName}
               onChangeText={setCityName}
             />
-            <Button title="Search" onPress={fetchWeatherData} />
-            {weatherData && (
-              <>
-                <WeatherInfo
-                  title={weatherData.name}
-                  temperature={weatherData.temperature}
-                  windSpeed={weatherData.windSpeed}
-                />
-                <Button title="Save Location" onPress={saveLocation} />
-              </>
-            )}
-            <Button title="Clear" onPress={clearSearch} />
+            <TouchableOpacity style={styles.searchButton} onPress={handleSearch}>
+              <Text style={styles.searchButtonText}>Search</Text>
+            </TouchableOpacity>
           </View>
-        </ImageBackground>
-      </ScrollView>
+          {weatherData && (
+            <View style={styles.weatherDetails}>
+              <Text style={styles.city}>City: {weatherData.name.toUpperCase()}</Text>
+              <Text style={styles.temp}>Temperature: {Math.round(weatherData.temperature)}°C</Text>
+              <Text style={styles.weatherInfo}>Wind Speed: {Math.round(weatherData.windSpeed)} km/h</Text>
+              <TouchableOpacity style={styles.saveButton} onPress={saveLocation}>
+                <Text style={styles.saveButtonText}>Save</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+          <TouchableOpacity style={styles.clearButton} onPress={clearSearch}>
+            <Text style={styles.clearButtonText}>Clear</Text>
+          </TouchableOpacity>
+        </View>
+      </ImageBackground>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  flexContainer: {
     flex: 1,
-    padding: 20,
+  },
+  imageBackground: {
+    width: width,
+    height: height,
+    paddingTop: 80, 
+  },
+  contentContainer: {
+    flex: 1,
+    alignItems: 'center',
+    paddingHorizontal: 20,
   },
   header: {
-    fontSize: 50,
-    color: 'white',
-    textAlign: 'center',
+    fontSize: 24,
+    color: '#FFF',
+    fontWeight: '700',
     marginBottom: 20,
   },
-  searchInput: {
-    height: 40,
-    borderColor: 'gray',
-    borderWidth: 1,
-    marginBottom: 10,
-    color: 'black',
-    backgroundColor: 'white',
-    borderRadius: 10,
+  saveButton: {
+    backgroundColor: '#136182', 
+    borderRadius: 20,
+    paddingVertical: 10,
     paddingHorizontal: 10,
+    marginTop: 15,
+  },
+    saveButtonText:{
+      color: '#FFF',
+      fontSize: 16,
+      fontWeight: 'bold',
+      textAlign: 'center',
+  },
+  searchContainer: {
+    flexDirection: 'row',
+    marginBottom: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    borderRadius: 25,
+  },
+  searchInput: {
+    flex: 1,
+    height: 50,
+    paddingHorizontal: 20,
+    fontSize: 16,
+    color: '#FFF',
+  },
+  searchButton: {
+    padding: 15,
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    borderTopRightRadius: 25,
+    borderBottomRightRadius: 25,
+  },
+  searchButtonText: {
+    color: '#FFF',
+    fontSize: 16,
   },
   weatherDetails: {
-    backgroundColor: 'white',
-    marginTop: 10,
-    marginHorizontal: 10,
-    padding: 30,
-    borderRadius: 10,
-    borderColor: 'black',
-    borderWidth: 1,
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    borderRadius: 20,
+    padding: 20,
+    width: '100%',
+    marginVertical: 20,
   },
   city: {
-    fontSize: 20,
-    textAlign: 'left',
-    color: 'black',
+    fontSize: 22,
+    color: '#333',
     fontWeight: 'bold',
+    marginBottom: 5,
   },
   temp: {
-    fontSize: 35,
-    textAlign: 'left',
-    color: 'black',
+    fontSize: 20,
+    color: '#333',
+    marginBottom: 5,
   },
   weatherInfo: {
-    fontSize: 15,
-    textAlign: 'left',
-    color: 'black',
+    fontSize: 18,
+    color: '#333',
   },
+  clearButton: {
+    backgroundColor: '#6994D6', 
+    borderRadius: 20,
+    paddingVertical: 10,
+    paddingHorizontal: 30,
+    marginTop: 10,
+  },
+  clearButtonText: {
+    color: '#FFF',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  icon: { width: 40, height: 40, 
+  marginRight: 10,},
 });
 
 export default Search;
