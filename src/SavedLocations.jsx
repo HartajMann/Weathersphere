@@ -1,14 +1,23 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, Button, FlatList, TouchableOpacity } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  SafeAreaView,
+  FlatList,
+  TouchableOpacity,
+  Dimensions,
+    ImageBackground,
+  Alert,
+} from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect } from '@react-navigation/native';
-import LocationWeatherDetails from './LocationWeatherDetails';
+
+const { width, height } = Dimensions.get('window');
 
 function SavedLocationsPage({ navigation }) {
   const [savedLocations, setSavedLocations] = useState([]);
-  const [selectedLocations, setSelectedLocations] = useState(new Set());
 
-  // Define loadSavedLocations outside of the useEffect and useFocusEffect
   const loadSavedLocations = async () => {
     try {
       const keys = await AsyncStorage.getAllKeys();
@@ -17,7 +26,7 @@ function SavedLocationsPage({ navigation }) {
       const locations = locationObjects.map(([key, value]) => JSON.parse(value));
       setSavedLocations(locations);
     } catch (error) {
-      console.error('Error loading saved locations: ', error);
+      Alert.alert('Error', 'Error loading saved locations.');
     }
   };
 
@@ -31,70 +40,93 @@ function SavedLocationsPage({ navigation }) {
     }, [])
   );
 
-  const viewWeatherDetails = (location) => {
+  const viewWeatherDetails = location => {
     navigation.navigate('LocationWeatherDetails', { location });
   };
-  
-  
 
-        const deleteSelectedLocations = async () => {
-            try {
-                const keysToDelete = Array.from(selectedLocations).map(locationName => `location_${locationName}`);
-                await AsyncStorage.multiRemove(keysToDelete);
-                setSelectedLocations(new Set());
-                loadSavedLocations(); // Reload locations after deletion
-            } catch (error) {
-                console.error('Error deleting locations: ', error);
-            }
-        };
-
-        const toggleSelection = (locationName) => {
-            const newSelectedLocations = new Set(selectedLocations);
-            if (newSelectedLocations.has(locationName)) {
-                newSelectedLocations.delete(locationName);
-            } else {
-                newSelectedLocations.add(locationName);
-            }
-            setSelectedLocations(newSelectedLocations);
-        };
-
-        const renderLocationItem = ({ item }) => (
-            <TouchableOpacity
-                onPress={() => viewWeatherDetails(item)}
-                onLongPress={() => toggleSelection(item.name)}
-                style={selectedLocations.has(item.name) ? styles.selectedLocationItem : styles.locationItem}
-            >
-                <Text>{item.name.toUpperCase()}</Text>
-            </TouchableOpacity>
-        );
-
-        return (
-            <SafeAreaView style={styles.container}>
-                <FlatList
-                    data={savedLocations}
-                    renderItem={renderLocationItem}
-                    keyExtractor={item => item.name}
-                />
-                <Button title="Delete Selected" onPress={deleteSelectedLocations} />
-            </SafeAreaView>
-        );
+  const deleteLocation = async locationName => {
+    try {
+      await AsyncStorage.removeItem(`location_${locationName}`);
+      loadSavedLocations(); // Reload locations after deletion
+    } catch (error) {
+      Alert.alert('Error', 'Error deleting location.');
     }
+  };
+
+  const renderLocationItem = ({ item }) => (
+    <View style={styles.locationItem}>
+      <TouchableOpacity onPress={() => viewWeatherDetails(item)} style={styles.locationInfo}>
+        <Text style={styles.locationText}>{(item.name).toUpperCase()}</Text>
+      </TouchableOpacity>
+      <TouchableOpacity onPress={() => deleteLocation(item.name)} style={styles.deleteButton}>
+        <Text style={styles.deleteButtonText}>Delete</Text>
+      </TouchableOpacity>
+    </View>
+  );
+
+  return (
+    <SafeAreaView style={styles.container}>
+    <ImageBackground
+        blurRadius={70}
+        source={require('./assets/bg.png')}
+        style={styles.image}>
+      <FlatList
+        data={savedLocations}
+        renderItem={renderLocationItem}
+        keyExtractor={item => item.name}
+        style={styles.list}
+      />
+      </ImageBackground>
+    </SafeAreaView>
+  );
+}
 
 const styles = StyleSheet.create({
-        container: {
-            flex: 1,
-        },
-        locationItem: {
-            padding: 20,
-            borderBottomWidth: 1,
-            borderBottomColor: '#ddd',
-        },
-        selectedLocationItem: {
-            padding: 20,
-            borderBottomWidth: 1,
-            borderBottomColor: '#ddd',
-            backgroundColor: '#e0e0e0',
-        },
-    });
+  container: {
+    flex: 1,
+    backgroundColor: '#f7f7f7',
+  },
+  list: {
+    padding: 10,
+  },
+  image: {
+    flex: 1,
+    width: width, 
+    height: height, 
+  },
+  locationItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#ffffff',
+    borderRadius: 8,
+    padding: 15,
+    marginVertical: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  locationInfo: {
+    flex: 1,
+  },
+  locationText: {
+    fontSize: 18,
+    color: '#333',
+  },
+  deleteButton: {
+    backgroundColor: '#136182',
+    padding: 10,
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 15,
+  },
+  deleteButtonText: {
+    color: '#ffffff',
+    fontSize: 16,
+  },
+});
 
-    export default SavedLocationsPage;
+export default SavedLocationsPage;
